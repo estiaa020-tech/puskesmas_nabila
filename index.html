@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistem Informasi Puskesmas</title>
+    <style>
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            margin: 30px; 
+            background-color: #f8f9fa; 
+            color: #333;
+        }
+        h1 { 
+            color: #2c3e50; 
+            margin-bottom: 5px;
+        }
+        h2 { 
+            color: #16a085; 
+            margin-top: 40px; 
+            border-bottom: 2px solid #16a085; 
+            padding-bottom: 5px;
+        }
+        .info-status {
+            background-color: #ffeeba;
+            color: #856404;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            font-weight: bold;
+            display: inline-block;
+            transition: all 0.3s ease;
+        }
+        table { 
+            width: 100%; 
+            border-collapse: collapse; 
+            margin-top: 15px; 
+            background: #fff; 
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        table, th, td { 
+            border: 1px solid #dee2e6; 
+        }
+        th, td { 
+            padding: 12px 15px; 
+            text-align: left; 
+        }
+        th { 
+            background-color: #16a085; 
+            color: white; 
+        }
+        tr:nth-child(even) { 
+            background-color: #f9f9f9; 
+        }
+        tr:hover {
+            background-color: #f1f1f1;
+        }
+        .empty-row {
+            text-align: center;
+            color: #7f8c8d;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Dashboard Puskesmas</h1>
+    <div id="status-koneksi" class="info-status">Menghubungkan ke API Server...</div>
+
+    <h2>Data Pasien</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>ID Pasien</th>
+                <th>No BPJS</th>
+                <th>Nama Pasien</th>
+                <th>Jenis Kelamin</th>
+                <th>Tanggal Lahir</th>
+                <th>Alamat</th>
+            </tr>
+        </thead>
+        <tbody id="tabel-pasien">
+            <tr><td colspan="6" class="empty-row">Sedang memuat data pasien...</td></tr>
+        </tbody>
+    </table>
+
+    <h2>Data Dokter</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>ID Dokter</th>
+                <th>Nama Dokter</th>
+                <th>Spesialis / Poli</th>
+            </tr>
+        </thead>
+        <tbody id="tabel-dokter">
+            <tr><td colspan="3" class="empty-row">Sedang memuat data dokter...</td></tr>
+        </tbody>
+    </table>
+
+    <h2>Data Obat</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>ID Obat</th>
+                <th>Nama Obat</th>
+                <th>Stok</th>
+                <th>Satuan</th>
+            </tr>
+        </thead>
+        <tbody id="tabel-obat">
+            <tr><td colspan="4" class="empty-row">Sedang memuat data obat...</td></tr>
+        </tbody>
+    </table>
+
+    <script>
+        // Mengambil data secara asynchronous dari file backend PHP
+        fetch('ambil_data.php')
+            .then(response => response.json())
+            .then(data => {
+                const statusBadge = document.getElementById('status-koneksi');
+
+                // Validasi jika ada error koneksi dari database di sisi PHP
+                if(data.error) {
+                    statusBadge.style.backgroundColor = '#f8d7da';
+                    statusBadge.style.color = '#721c24';
+                    statusBadge.innerText = '✗ ' + data.error;
+                    return;
+                }
+
+                // Update status koneksi sukses
+                statusBadge.style.backgroundColor = '#d4edda';
+                statusBadge.style.color = '#155724';
+                statusBadge.innerText = '✓ Terhubung ke Database: ' + data.database;
+
+                // 1. Suntik Data Pasien ke Tabel
+                const tbodyPasien = document.getElementById('tabel-pasien');
+                if(data.pasien && data.pasien.length > 0) {
+                    tbodyPasien.innerHTML = data.pasien.map(p => `
+                        <tr>
+                            <td>${p.id_pasien}</td>
+                            <td>${p.no_bpjs}</td>
+                            <td>${p.nama_pasien}</td>
+                            <td>${p.jenis_kelamin}</td>
+                            <td>${p.tgl_lahir}</td>
+                            <td>${p.alamat}</td>
+                        </tr>
+                    `).join('');
+                } else {
+                    tbodyPasien.innerHTML = "<tr><td colspan='6' class='empty-row'>Tidak ada data di tabel pasien.</td></tr>";
+                }
+
+                // 2. Suntik Data Dokter ke Tabel
+                const tbodyDokter = document.getElementById('tabel-dokter');
+                if(data.dokter && data.dokter.length > 0) {
+                    tbodyDokter.innerHTML = data.dokter.map(d => `
+                        <tr>
+                            <td>${d.id_dokter}</td>
+                            <td>${d.nama_dokter}</td>
+                            <td>${d.spesialis_poli}</td>
+                        </tr>
+                    `).join('');
+                } else {
+                    tbodyDokter.innerHTML = "<tr><td colspan='3' class='empty-row'>Tidak ada data di tabel dokter.</td></tr>";
+                }
+
+                // 3. Suntik Data Obat ke Tabel
+                const tbodyObat = document.getElementById('tabel-obat');
+                if(data.obat && data.obat.length > 0) {
+                    tbodyObat.innerHTML = data.obat.map(o => `
+                        <tr>
+                            <td>${o.id_obat}</td>
+                            <td>${o.nama_obat}</td>
+                            <td>${o.stok}</td>
+                            <td>${o.satuan}</td>
+                        </tr>
+                    `).join('');
+                } else {
+                    tbodyObat.innerHTML = "<tr><td colspan='4' class='empty-row'>Tidak ada data di tabel obat.</td></tr>";
+                }
+            })
+            .catch(err => {
+                const statusBadge = document.getElementById('status-koneksi');
+                statusBadge.style.backgroundColor = '#f8d7da';
+                statusBadge.style.color = '#721c24';
+                statusBadge.innerText = '✗ Gagal memuat data dari API atau file ambil_data.php belum dibuat.';
+                console.error('Error Fetch:', err);
+            });
+    </script>
+</body>
+</html>
